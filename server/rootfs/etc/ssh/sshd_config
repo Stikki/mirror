@@ -1,0 +1,25 @@
+Port 2222
+HostKey /etc/ssh/keys/ssh_host_ed25519_key
+HostKey /etc/ssh/keys/ssh_host_rsa_key
+
+PermitRootLogin no
+PasswordAuthentication no
+ChallengeResponseAuthentication no
+KbdInteractiveAuthentication no
+
+AuthorizedKeysFile /home/mirror/.ssh/authorized_keys
+
+AllowUsers mirror
+AllowTcpForwarding yes
+GatewayPorts no
+PermitTunnel no
+X11Forwarding no
+AllowAgentForwarding no
+PermitTTY no
+
+ClientAliveInterval 30
+ClientAliveCountMax 3
+
+Subsystem sftp /dev/null
+
+LogLevel INFO

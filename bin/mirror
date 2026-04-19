@@ -1,0 +1,28 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+#
+# Config
+#
+CONFIG="${XDG_CONFIG_HOME:-$HOME/.config}/mirror/config"
+[[ -f "$CONFIG" ]] && source "$CONFIG"
+
+: "${MIRROR_HOST:?Set MIRROR_HOST in $CONFIG}"
+: "${MIRROR_USER:=mirror}"
+: "${MIRROR_PORT:=7000}"
+: "${MIRROR_SSH_PORT:=22}"
+
+#
+# Args
+#
+LOCAL_PORT="${1:?Usage: mirror <localPort>}"
+
+printf 'Mirroring localhost:%s -> https://%s\n' "$LOCAL_PORT" "$MIRROR_HOST"
+printf 'Press Ctrl-C to stop.\n\n'
+
+exec ssh -N -p "$MIRROR_SSH_PORT" \
+  -R "$MIRROR_PORT:localhost:$LOCAL_PORT" \
+  -o ExitOnForwardFailure=yes \
+  -o ServerAliveInterval=30 \
+  -o ServerAliveCountMax=3 \
+  "$MIRROR_USER@$MIRROR_HOST"

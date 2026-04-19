@@ -1,0 +1,3 @@
+server/authorized_keys
+*.swp
+.DS_Store
