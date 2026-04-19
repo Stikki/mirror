@@ -72,7 +72,7 @@ resource "aws_instance" "mirror" {
   associate_public_ip_address = true
 
   root_block_device {
-    volume_size = 8
+    volume_size = 30
     volume_type = "gp3"
   }
 
