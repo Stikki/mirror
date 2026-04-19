@@ -24,11 +24,6 @@ variable "mirror_authorized_key" {
   type        = string
 }
 
-variable "mirror_ssh_port" {
-  type    = number
-  default = 2222
-}
-
 variable "mirror_tunnel_port" {
   type    = number
   default = 7000

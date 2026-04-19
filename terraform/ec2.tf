@@ -47,10 +47,10 @@ resource "aws_security_group" "mirror" {
     cidr_blocks = ["0.0.0.0/0"]
   }
 
-  # Tunnel SSH
+  # Tunnel SSH (container sshd on port 2222)
   ingress {
-    from_port   = var.mirror_ssh_port
-    to_port     = var.mirror_ssh_port
+    from_port   = 2222
+    to_port     = 2222
     protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
   }
@@ -68,7 +68,8 @@ resource "aws_instance" "mirror" {
   instance_type          = var.instance_type
   key_name               = aws_key_pair.mirror.key_name
   vpc_security_group_ids = [aws_security_group.mirror.id]
-  subnet_id              = data.aws_subnets.default.ids[0]
+  subnet_id                   = data.aws_subnets.default.ids[0]
+  associate_public_ip_address = true
 
   root_block_device {
     volume_size = 8
@@ -76,9 +77,8 @@ resource "aws_instance" "mirror" {
   }
 
   user_data = templatefile("${path.module}/templates/userdata.sh.tpl", {
-    domain               = var.domain
-    mirror_ssh_port      = var.mirror_ssh_port
-    mirror_tunnel_port   = var.mirror_tunnel_port
+    domain                = var.domain
+    mirror_tunnel_port    = var.mirror_tunnel_port
     mirror_authorized_key = var.mirror_authorized_key
   })
 

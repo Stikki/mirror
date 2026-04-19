@@ -7,7 +7,7 @@ output "url" {
 }
 
 output "ssh_admin" {
-  value = "ssh -i ${var.ssh_pubkey_path} ec2-user@${aws_eip.mirror.public_ip}"
+  value = "ssh -i ${replace(var.ssh_pubkey_path, ".pub", "")} ec2-user@${aws_eip.mirror.public_ip}"
 }
 
 output "mirror_command" {

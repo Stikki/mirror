@@ -4,7 +4,7 @@ set -euo pipefail
 #
 # Install Docker
 #
-dnf install -y docker git
+dnf install -y docker git bind-utils
 systemctl enable --now docker
 
 DOCKER_CONFIG=/usr/local/lib/docker
@@ -12,11 +12,6 @@ mkdir -p "$DOCKER_CONFIG/cli-plugins"
 curl -SL "https://github.com/docker/compose/releases/latest/download/docker-compose-linux-x86_64" \
   -o "$DOCKER_CONFIG/cli-plugins/docker-compose"
 chmod +x "$DOCKER_CONFIG/cli-plugins/docker-compose"
-
-#
-# Install certbot
-#
-dnf install -y certbot
 
 #
 # Clone the repo
@@ -38,9 +33,17 @@ ${mirror_authorized_key}
 AUTHEOF
 
 #
-# Obtain TLS certificate (standalone — nothing on port 80 yet)
+# Wait for DNS to propagate before requesting TLS cert
 #
 mkdir -p /var/www/letsencrypt
+for i in $(seq 1 30); do
+  if dig +short "${domain}" 2>/dev/null | grep -q .; then
+    break
+  fi
+  sleep 10
+done
+
+dnf install -y certbot
 certbot certonly --standalone --non-interactive --agree-tos \
   --register-unsafely-without-email \
   -d "${domain}" \
