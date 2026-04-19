@@ -15,37 +15,42 @@ Two components:
 
 Single tunnel, single hostname, no multi-tenancy.
 
-## Server setup
+## Deploy to AWS
 
-On the cloud host:
+```bash
+cd terraform/
+cp terraform.tfvars.example terraform.tfvars
+# Edit terraform.tfvars — set mirror_authorized_key to your pubkey
+terraform init
+terraform plan
+terraform apply
+```
+
+The image must exist on GHCR before deploying. Push to `main` to trigger the GitHub Actions build, or run `gh workflow run build.yml` manually.
+
+## Local development
 
 ```bash
 cd server/
-cp .env.example .env
-# Edit MIRROR_HOST, etc.
-cp ~/my-laptop.pub authorized_keys   # one or more SSH pubkeys, one per line
-
-# If using TLS (MIRROR_TLS=auto), obtain cert first:
-sudo certbot certonly --webroot -w /var/www/letsencrypt -d "$MIRROR_HOST"
-
-docker compose up -d
-docker compose logs -f
+cp ~/.ssh/your-key.pub authorized_keys
+MIRROR_HOST=localhost MIRROR_TLS=off docker compose up --build
 ```
 
-DNS: point `MIRROR_HOST` at the server's public IP.
+Then from another terminal:
+
+```bash
+ssh -N -p 2222 -i ~/.ssh/your-key -R 7000:localhost:3000 mirror@localhost
+```
 
 ## Client setup
 
-On the laptop:
-
 ```bash
-# One-time
 mkdir -p ~/.config/mirror
 cat > ~/.config/mirror/config <<EOF
-MIRROR_HOST=mirror.example.com
+MIRROR_HOST=mirror.stikki.ninja
 MIRROR_USER=mirror
 MIRROR_PORT=7000
-MIRROR_SSH_PORT=2022
+MIRROR_SSH_PORT=2222
 EOF
 
 ln -s "$PWD/bin/mirror" ~/.local/bin/mirror
@@ -56,12 +61,20 @@ mirror 3000
 
 Ctrl-C to stop.
 
-## Files
+## Structure
 
-- `bin/mirror` — client script
-- `server/Dockerfile` — Alpine + Angie + sshd
-- `server/docker-compose.yml` — one-command deploy
-- `server/rootfs/usr/local/bin/entrypoint.sh` — renders config, supervises daemons
-- `server/rootfs/etc/angie/http.d/mirror.conf.template` — Angie server block (TLS)
-- `server/rootfs/etc/angie/http.d/mirror.http.conf.template` — Angie server block (HTTP-only)
-- `server/rootfs/etc/ssh/sshd_config` — hardened sshd config
+```
+bin/mirror                  client script
+server/
+  Dockerfile                Alpine + Angie + sshd
+  docker-compose.yml        local dev (builds image)
+  rootfs/                   files copied into the image
+deploy/
+  docker-compose.yml        production (pulls from GHCR)
+  .env.example              production env vars
+terraform/
+  *.tf                      AWS infra (EC2, EIP, Route53)
+  templates/userdata.sh.tpl EC2 cloud-init script
+.github/workflows/
+  build.yml                 builds and pushes image to GHCR
+```

@@ -11,6 +11,10 @@ CONFIG="${XDG_CONFIG_HOME:-$HOME/.config}/mirror/config"
 : "${MIRROR_USER:=mirror}"
 : "${MIRROR_PORT:=7000}"
 : "${MIRROR_SSH_PORT:=22}"
+: "${MIRROR_SSH_KEY:=}"
+
+SSH_KEY_OPTS=()
+[[ -n "$MIRROR_SSH_KEY" ]] && SSH_KEY_OPTS=(-i "$MIRROR_SSH_KEY")
 
 #
 # Args
@@ -21,6 +25,7 @@ printf 'Mirroring localhost:%s -> https://%s\n' "$LOCAL_PORT" "$MIRROR_HOST"
 printf 'Press Ctrl-C to stop.\n\n'
 
 exec ssh -N -p "$MIRROR_SSH_PORT" \
+  "${SSH_KEY_OPTS[@]}" \
   -R "$MIRROR_PORT:localhost:$LOCAL_PORT" \
   -o ExitOnForwardFailure=yes \
   -o ServerAliveInterval=30 \

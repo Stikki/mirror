@@ -9,16 +9,15 @@ set -euo pipefail
 # Render Angie config from template
 #
 if [[ "$MIRROR_TLS" == "off" ]]; then
-  TEMPLATE=/etc/angie/http.d/mirror.http.conf.template
+  TEMPLATE=/etc/angie/templates/mirror.http.conf.template
 else
-  TEMPLATE=/etc/angie/http.d/mirror.conf.template
+  TEMPLATE=/etc/angie/templates/mirror.conf.template
 fi
 
 sed "s/__MIRROR_HOST__/$MIRROR_HOST/g; s/__MIRROR_PORT__/$MIRROR_PORT/g" \
   "$TEMPLATE" > /etc/angie/http.d/mirror.conf
 
-# Remove templates and Alpine's default config so they don't conflict
-rm -f /etc/angie/http.d/*.template
+# Remove Alpine's default config so it doesn't conflict
 rm -f /etc/angie/http.d/default.conf
 
 #
