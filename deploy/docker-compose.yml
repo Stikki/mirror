@@ -1,0 +1,23 @@
+services:
+  mirror:
+    image: ghcr.io/stikki/mirror:latest
+    container_name: mirror
+    restart: unless-stopped
+    network_mode: host
+    environment:
+      MIRROR_HOST: ${MIRROR_HOST:?Set MIRROR_HOST in .env}
+      MIRROR_PORT: ${MIRROR_PORT:-7000}
+      MIRROR_TLS: ${MIRROR_TLS:-auto}
+    volumes:
+      - /etc/letsencrypt:/etc/letsencrypt:ro
+      - /var/www/letsencrypt:/var/www/letsencrypt:ro
+      - mirror-sshkeys:/etc/ssh/keys
+    secrets:
+      - mirror_authorized_keys
+
+secrets:
+  mirror_authorized_keys:
+    file: ./authorized_keys
+
+volumes:
+  mirror-sshkeys:

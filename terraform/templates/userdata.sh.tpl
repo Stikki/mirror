@@ -19,60 +19,23 @@ chmod +x "$DOCKER_CONFIG/cli-plugins/docker-compose"
 dnf install -y certbot
 
 #
-# Clone and set up mirror
+# Clone the repo
 #
-MIRROR_DIR=/opt/mirror
-mkdir -p "$MIRROR_DIR"
-cd "$MIRROR_DIR"
+git clone https://github.com/Stikki/mirror.git /opt/mirror
+cd /opt/mirror/deploy
 
-# Write authorized_keys for the tunnel user
-cat > authorized_keys <<'AUTHEOF'
-${mirror_authorized_key}
-AUTHEOF
-
-# Write .env
-cat > .env <<'ENVEOF'
+#
+# Write instance-specific files
+#
+cat > .env <<ENVEOF
 MIRROR_HOST=${domain}
 MIRROR_PORT=${mirror_tunnel_port}
 MIRROR_TLS=auto
-MIRROR_HTTP_PORT=80
-MIRROR_HTTPS_PORT=443
-MIRROR_SSH_PORT=${mirror_ssh_port}
 ENVEOF
 
-# Write docker-compose.yml
-cat > docker-compose.yml <<'COMPEOF'
-services:
-  mirror:
-    build: /opt/mirror/repo/server
-    container_name: mirror
-    restart: unless-stopped
-    ports:
-      - "${mirror_ssh_port}:2222"
-    network_mode: host
-    environment:
-      MIRROR_HOST: ${domain}
-      MIRROR_PORT: ${mirror_tunnel_port}
-      MIRROR_TLS: auto
-    volumes:
-      - /etc/letsencrypt:/etc/letsencrypt:ro
-      - /var/www/letsencrypt:/var/www/letsencrypt:ro
-      - mirror-sshkeys:/etc/ssh/keys
-    secrets:
-      - mirror_authorized_keys
-
-secrets:
-  mirror_authorized_keys:
-    file: /opt/mirror/authorized_keys
-
-volumes:
-  mirror-sshkeys:
-COMPEOF
-
-#
-# Clone the repo to get the Dockerfile and rootfs
-#
-git clone https://github.com/stikki/mirror.git /opt/mirror/repo || true
+cat > authorized_keys <<'AUTHEOF'
+${mirror_authorized_key}
+AUTHEOF
 
 #
 # Obtain TLS certificate (standalone — nothing on port 80 yet)
@@ -84,10 +47,9 @@ certbot certonly --standalone --non-interactive --agree-tos \
   --deploy-hook "docker exec mirror angie -s reload 2>/dev/null || true"
 
 #
-# Build and start
+# Pull and start
 #
-cd "$MIRROR_DIR"
-docker compose up -d --build
+docker compose up -d
 
 #
 # Certbot auto-renewal cron

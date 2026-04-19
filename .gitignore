@@ -1,3 +1,12 @@
 server/authorized_keys
+deploy/authorized_keys
+deploy/.env
 *.swp
 .DS_Store
+
+# Terraform
+terraform/.terraform/
+terraform/*.tfstate
+terraform/*.tfstate.backup
+terraform/.terraform.lock.hcl
+terraform/terraform.tfvars
