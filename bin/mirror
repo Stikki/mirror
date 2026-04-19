@@ -1,25 +1,79 @@
 #!/usr/bin/env bash
+
 set -euo pipefail
+
+usage() {
+  printf 'Usage: %s PORT\n' "${0##*/}"
+  printf '\n'
+  printf 'Expose a local HTTP port through a remote server via SSH reverse tunnel.\n'
+  printf '\n'
+  printf 'Arguments:\n'
+  printf '  PORT    local port to forward\n'
+  printf '\n'
+  printf 'Config: %s\n' "$CONFIG"
+  printf '\n'
+  printf 'Variables:\n'
+  printf '  MIRROR_HOST       remote server hostname (required)\n'
+  printf '  MIRROR_USER       SSH user (default: mirror)\n'
+  printf '  MIRROR_PORT       remote tunnel port (default: 7000)\n'
+  printf '  MIRROR_SSH_PORT   remote SSH port (default: 22)\n'
+  printf '  MIRROR_SSH_KEY    path to SSH private key (optional)\n'
+  printf '\n'
+  printf 'Environment:\n'
+  printf '  MIRROR_ENV        config profile name (default: production)\n'
+  exit 1
+}
 
 #
 # Config
 #
-CONFIG="${XDG_CONFIG_HOME:-$HOME/.config}/mirror/config"
+
+CONFIG_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/mirror"
+CONFIG="${CONFIG_DIR}/${MIRROR_ENV:-production}"
+
+MIRROR_VARS=(
+  MIRROR_HOST
+  MIRROR_USER=mirror
+  MIRROR_PORT=7000
+  MIRROR_SSH_PORT=22
+  MIRROR_SSH_KEY=
+)
+
+declare -A _saved
+for entry in "${MIRROR_VARS[@]}"; do
+  var="${entry%%=*}"
+  [[ -n "${!var:-}" ]] && _saved[$var]="${!var}"
+done
+
 [[ -f "$CONFIG" ]] && source "$CONFIG"
 
-: "${MIRROR_HOST:?Set MIRROR_HOST in $CONFIG}"
-: "${MIRROR_USER:=mirror}"
-: "${MIRROR_PORT:=7000}"
-: "${MIRROR_SSH_PORT:=22}"
-: "${MIRROR_SSH_KEY:=}"
+for var in "${!_saved[@]}"; do
+  declare "$var=${_saved[$var]}"
+done
+
+for entry in "${MIRROR_VARS[@]}"; do
+  var="${entry%%=*}"
+  if [[ "$entry" == *=* ]]; then
+    : "${!var:=${entry#*=}}"
+  else
+    : "${!var:?$var not set — use $CONFIG or env vars}"
+  fi
+done
+
+#
+# Arguments / Options
+#
+
+[[ $# -lt 1 || "$1" == "-h" || "$1" == "--help" ]] && usage
+
+LOCAL_PORT="$1"
 
 SSH_KEY_OPTS=()
 [[ -n "$MIRROR_SSH_KEY" ]] && SSH_KEY_OPTS=(-i "$MIRROR_SSH_KEY")
 
 #
-# Args
+# Main
 #
-LOCAL_PORT="${1:?Usage: mirror <localPort>}"
 
 printf 'Mirroring localhost:%s -> https://%s\n' "$LOCAL_PORT" "$MIRROR_HOST"
 printf 'Press Ctrl-C to stop.\n\n'
